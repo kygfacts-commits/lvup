@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { QUESTIONS, calculateStats } from './questions'
 import type { OptionKey, Role } from './questions'
+import { StepDisclaimer } from './StepDisclaimer'
 import { StepQuestions } from './StepQuestions'
 import { StepResult } from './StepResult'
 import { StepSaving } from './StepSaving'
 
-type Phase = 'questions' | 'result' | 'saving'
+type Phase = 'disclaimer' | 'questions' | 'result' | 'saving'
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message
@@ -21,7 +22,7 @@ function getErrorMessage(error: unknown): string {
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const [phase, setPhase] = useState<Phase>('questions')
+  const [phase, setPhase] = useState<Phase>('disclaimer')
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<number, OptionKey>>({})
   const [chosen, setChosen] = useState<{ role: Role; name: string } | null>(null)
@@ -51,7 +52,7 @@ export default function OnboardingPage() {
         throw new Error('Your session expired. Please log in again.')
       }
 
-      const stats = calculateStats(answers)
+      const { stats, rank } = calculateStats(answers)
 
       // 1. Resolve the role_id for the chosen class.
       const { data: roleRow, error: roleError } = await supabase
@@ -63,14 +64,14 @@ export default function OnboardingPage() {
         throw new Error(`Role "${role.name}" was not found. Please try again.`)
       }
 
-      // 2. Persist the profile snapshot.
+      // 2. Persist the profile snapshot with the calculated rank.
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
           stats,
           role_id: roleRow.id,
           role_name: roleName,
-          rank: 'F',
+          rank,
           onboarding_done: true,
         })
         .eq('id', user.id)
@@ -127,15 +128,20 @@ export default function OnboardingPage() {
   }
 
   if (phase === 'result') {
-    return <StepResult stats={calculateStats(answers)} onComplete={handleComplete} />
+    const { stats, rank } = calculateStats(answers)
+    return <StepResult stats={stats} rank={rank} onComplete={handleComplete} />
   }
 
-  return (
-    <StepQuestions
-      question={QUESTIONS[currentIndex]}
-      index={currentIndex}
-      total={QUESTIONS.length}
-      onAnswer={handleAnswer}
-    />
-  )
+  if (phase === 'questions') {
+    return (
+      <StepQuestions
+        question={QUESTIONS[currentIndex]}
+        index={currentIndex}
+        total={QUESTIONS.length}
+        onAnswer={handleAnswer}
+      />
+    )
+  }
+
+  return <StepDisclaimer onStart={() => setPhase('questions')} />
 }

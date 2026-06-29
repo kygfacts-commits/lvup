@@ -1,16 +1,17 @@
 export type StatKey = 'STR' | 'INT' | 'VIT' | 'WIS' | 'CRE' | 'LCK' | 'CHA'
-export type OptionKey = 'A' | 'B' | 'C' | 'D'
+export type OptionKey = 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
 export type Stats = Record<StatKey, number>
 
-export interface QuestionOption {
+export type Option = {
   text: string
-  stats: Partial<Stats>
+  points: number
+  stats: Partial<Record<StatKey, number>>
 }
 
-export interface Question {
+export type Question = {
   id: number
   question: string
-  options: Record<OptionKey, QuestionOption>
+  options: Record<OptionKey, Option>
 }
 
 export interface Role {
@@ -22,7 +23,7 @@ export interface Role {
 
 export const STAT_KEYS: StatKey[] = ['STR', 'INT', 'VIT', 'WIS', 'CRE', 'LCK', 'CHA']
 
-export const OPTION_KEYS: OptionKey[] = ['A', 'B', 'C', 'D']
+export const OPTION_KEYS: OptionKey[] = ['A', 'B', 'C', 'D', 'E', 'F']
 
 export const STAT_LABELS: Record<StatKey, string> = {
   STR: 'Strength',
@@ -47,102 +48,122 @@ export const STAT_COLORS: Record<StatKey, string> = {
 export const QUESTIONS: Question[] = [
   {
     id: 1,
-    question: 'Hari libur tiba. Kamu paling sering menghabiskan waktu dengan...',
+    question: 'Ketika kamu membuat rencana untuk dirimu sendiri, apa yang paling sering terjadi?',
     options: {
-      A: { text: 'Olahraga atau aktivitas fisik di luar', stats: { STR: 3, VIT: 2 } },
-      B: { text: 'Baca buku atau belajar hal baru', stats: { INT: 3, WIS: 2 } },
-      C: { text: 'Bikin sesuatu — gambar, musik, tulisan', stats: { CRE: 3, LCK: 1 } },
-      D: { text: 'Ngobrol atau kumpul sama orang-orang', stats: { CHA: 3, WIS: 1 } },
+      A: { text: 'Aku mulai dengan semangat tapi jarang sampai selesai', points: 0, stats: { STR: 1 } },
+      B: { text: 'Aku hampir selalu menyelesaikannya. Komitmen ke diri sendiri adalah harga mati', points: 4, stats: { WIS: 3, STR: 2 } },
+      C: { text: 'Aku bahkan jarang membuat rencana, apalagi menyelesaikannya', points: -1, stats: {} },
+      D: { text: 'Tergantung mood. Kadang selesai, kadang tidak', points: 2, stats: { WIS: 1, STR: 1 } },
+      E: { text: 'Lebih sering selesai daripada tidak, meski butuh usaha ekstra', points: 3, stats: { WIS: 2, STR: 2 } },
+      F: { text: 'Aku mudah menyerah begitu terasa berat', points: 1, stats: { STR: 1 } },
     },
   },
   {
     id: 2,
-    question: 'Kalau ada proyek besar, kamu biasanya...',
+    question: 'Kamu baru gagal di sesuatu yang penting. Apa yang paling sering kamu lakukan setelahnya?',
     options: {
-      A: { text: 'Langsung eksekusi, figuring out sambil jalan', stats: { STR: 2, VIT: 2, LCK: 1 } },
-      B: { text: 'Riset dulu sampai paham betul sebelum mulai', stats: { INT: 3, WIS: 2 } },
-      C: { text: 'Nyari angle unik yang orang lain belum kepikiran', stats: { CRE: 3, INT: 1 } },
-      D: { text: 'Ngajak orang lain buat kolaborasi', stats: { CHA: 3, WIS: 1 } },
+      A: { text: 'Analisis apa yang salah, ambil pelajaran, coba lagi dengan cara berbeda', points: 4, stats: { WIS: 3, INT: 2 } },
+      B: { text: 'Kegagalan membuatku berhenti total dan sulit memulai lagi', points: -1, stats: {} },
+      C: { text: 'Menyalahkan faktor luar — situasi, orang lain, atau nasib', points: 1, stats: { CHA: 1 } },
+      D: { text: 'Kecewa sesaat, tapi akhirnya bangkit dan lanjut', points: 3, stats: { WIS: 2, CHA: 1 } },
+      E: { text: 'Menghindari hal itu sepenuhnya agar tidak gagal lagi', points: 0, stats: {} },
+      F: { text: 'Butuh waktu lama untuk memproses, tapi akhirnya move on', points: 2, stats: { WIS: 2 } },
     },
   },
   {
     id: 3,
-    question: 'Kamu lagi down dan capek banget. Yang paling membantu adalah...',
+    question: 'Kalau kamu jujur, bagaimana kondisi fisikmu dalam 3 bulan terakhir?',
     options: {
-      A: { text: 'Olahraga atau gerak badan — langsung seger', stats: { VIT: 3, STR: 2 } },
-      B: { text: 'Sendirian, baca atau dengerin podcast', stats: { WIS: 3, INT: 1 } },
-      C: { text: 'Nuangin perasaan lewat seni atau tulisan', stats: { CRE: 3, WIS: 1 } },
-      D: { text: 'Cerita ke teman dekat atau keluarga', stats: { CHA: 3, WIS: 1 } },
+      A: { text: 'Sering lelah, sering sakit, pola hidup kacau', points: 0, stats: { VIT: 1 } },
+      B: { text: 'Tidak buruk, tapi tidak ada upaya aktif untuk menjaganya', points: 2, stats: { VIT: 1, STR: 1 } },
+      C: { text: 'Tidur teratur, makan bergizi, olahraga rutin', points: 4, stats: { VIT: 3, STR: 2 } },
+      D: { text: 'Sengaja mengabaikan tubuh — begadang ekstrem, tidak pernah olahraga', points: -1, stats: {} },
+      E: { text: 'Cukup baik — olahraga sesekali dan berusaha makan sehat', points: 3, stats: { VIT: 2, STR: 2 } },
+      F: { text: 'Tahu kebiasaanku buruk tapi sulit berubah', points: 1, stats: { WIS: 1 } },
     },
   },
   {
     id: 4,
-    question: 'Dalam satu minggu, kamu paling konsisten melakukan...',
+    question: 'Kapan terakhir kali kamu secara aktif belajar sesuatu yang baru — bukan karena terpaksa?',
     options: {
-      A: { text: 'Aktivitas fisik (gym, lari, olahraga)', stats: { STR: 3, VIT: 2 } },
-      B: { text: 'Belajar atau membaca minimal 30 menit', stats: { INT: 3, WIS: 1 } },
-      C: { text: 'Bikin atau berkreasi sesuatu', stats: { CRE: 3, LCK: 1 } },
-      D: { text: 'Workout sosial — networking, ngobrol, meeting', stats: { CHA: 3, STR: 1 } },
+      A: { text: 'Beberapa bulan lalu. Kadang terdorong, kadang tidak', points: 2, stats: { INT: 1, WIS: 1 } },
+      B: { text: 'Aku merasa tidak perlu berkembang, atau sudah menyerah untuk mencoba', points: -1, stats: {} },
+      C: { text: 'Minggu ini. Belajar adalah bagian dari rutinitasku', points: 4, stats: { INT: 3, WIS: 2 } },
+      D: { text: 'Sudah lama sekali. Tahu harus belajar tapi selalu ditunda', points: 1, stats: { INT: 1 } },
+      E: { text: 'Bulan ini. Aku berusaha terus berkembang meski tidak selalu konsisten', points: 3, stats: { INT: 2, WIS: 1 } },
+      F: { text: 'Rutinitas harianku hampir tidak berubah selama bertahun-tahun', points: 0, stats: {} },
     },
   },
   {
     id: 5,
-    question: 'Teman-teman biasanya mengenal kamu sebagai...',
+    question: 'Seberapa dalam kamu mengenal dirimu sendiri — kekuatan, kelemahan, dan pola perilakumu?',
     options: {
-      A: { text: 'Yang paling gigih dan ga gampang nyerah', stats: { STR: 2, VIT: 2, WIS: 1 } },
-      B: { text: 'Yang paling banyak tahu dan analitis', stats: { INT: 3, WIS: 2 } },
-      C: { text: 'Yang paling kreatif dan out-of-the-box', stats: { CRE: 3, LCK: 1 } },
-      D: { text: 'Yang paling mudah diajak bicara dan bisa dipercaya', stats: { CHA: 3, WIS: 1 } },
+      A: { text: 'Aku menghindari introspeksi — terlalu menyakitkan atau tidak berguna', points: -1, stats: {} },
+      B: { text: 'Lumayan. Aku sadar beberapa hal tapi banyak yang belum kujelajahi', points: 2, stats: { WIS: 2 } },
+      C: { text: 'Aku hidup by default, jarang mempertanyakan diri', points: 0, stats: {} },
+      D: { text: 'Sangat dalam. Aku aktif berefleksi dan tahu persis apa yang mendorongku', points: 4, stats: { WIS: 3, INT: 2 } },
+      E: { text: 'Cukup baik. Ada gambaran jelas meski masih ada blind spot', points: 3, stats: { WIS: 2, INT: 1 } },
+      F: { text: 'Terbatas. Sering terkejut dengan reaksiku sendiri', points: 1, stats: { WIS: 1 } },
     },
   },
   {
     id: 6,
-    question: 'Kalau kamu bisa instan jago satu hal, kamu pilih...',
+    question: 'Kalau kamu lihat ke belakang, bagaimana sebagian besar waktumu habis dalam seminggu terakhir?',
     options: {
-      A: { text: 'Kekuatan fisik dan stamina luar biasa', stats: { STR: 3, VIT: 2 } },
-      B: { text: 'Ingatan sempurna dan bisa belajar ultra-cepat', stats: { INT: 3, WIS: 2 } },
-      C: { text: 'Bisa bikin karya seni atau musik level maestro', stats: { CRE: 3, LCK: 1 } },
-      D: { text: 'Selalu beruntung di waktu yang tepat', stats: { LCK: 3, CHA: 2 } },
+      A: { text: 'Sebagian besar untuk scroll, rebahan, atau hiburan tanpa tujuan', points: 1, stats: { LCK: 1 } },
+      B: { text: 'Hampir semua waktu terbuang tanpa aku sadar bagaimana', points: 0, stats: {} },
+      C: { text: 'Campuran — sebagian produktif, sebagian hiburan yang kusadari', points: 3, stats: { INT: 2, WIS: 1 } },
+      D: { text: 'Sengaja menghindari hal yang berarti karena terasa berat', points: -1, stats: {} },
+      E: { text: 'Sebagian besar dengan intention — mengerjakan hal yang bermakna', points: 4, stats: { INT: 2, STR: 2, WIS: 1 } },
+      F: { text: 'Lebih banyak santai, sesekali melakukan sesuatu yang berarti', points: 2, stats: { WIS: 1, LCK: 1 } },
     },
   },
   {
     id: 7,
-    question: 'Sebelum tidur, kamu biasanya...',
+    question: 'Kalau orang-orang terdekatmu diminta jujur, bagaimana mereka menggambarkan kehadiranmu?',
     options: {
-      A: { text: 'Langsung tidur — badan udah capek dari aktivitas', stats: { VIT: 2, STR: 2 } },
-      B: { text: 'Refleksi hari ini, nulis jurnal atau to-do besok', stats: { WIS: 3, INT: 2 } },
-      C: { text: 'Dengerin musik, nonton, atau scroll konten kreatif', stats: { CRE: 3, LCK: 1 } },
-      D: { text: 'Balas pesan atau update teman-teman soal hari ini', stats: { CHA: 3, WIS: 1 } },
+      A: { text: 'Sebagai seseorang yang bisa diandalkan dan memberi dampak positif', points: 4, stats: { CHA: 3, WIS: 2 } },
+      B: { text: 'Aku mengisolasi diri atau sering meninggalkan dampak negatif', points: -1, stats: {} },
+      C: { text: 'Hadir tapi tidak terlalu berkesan', points: 2, stats: { CHA: 1 } },
+      D: { text: 'Sebagai teman yang baik, meski tidak selalu konsisten', points: 3, stats: { CHA: 2, WIS: 1 } },
+      E: { text: 'Aku tahu hubunganku bermasalah tapi belum berubah', points: 0, stats: {} },
+      F: { text: 'Mereka mungkin merasa aku kurang hadir atau sulit diandalkan', points: 1, stats: { CHA: 1 } },
     },
   },
   {
     id: 8,
-    question: 'Kalau harus pilih satu kata yang paling menggambarkan dirimu...',
+    question: 'Ketika tekanan datang bertubi-tubi, apa yang paling sering terjadi pada dirimu?',
     options: {
-      A: { text: 'Tangguh', stats: { STR: 2, VIT: 3 } },
-      B: { text: 'Cerdas', stats: { INT: 3, WIS: 2 } },
-      C: { text: 'Imajinatif', stats: { CRE: 3, LCK: 2 } },
-      D: { text: 'Karismatik', stats: { CHA: 3, STR: 1 } },
+      A: { text: 'Butuh waktu dan kadang membuat keputusan buruk, tapi akhirnya stabil', points: 2, stats: { WIS: 2, VIT: 1 } },
+      B: { text: 'Aku bisa tetap tenang, memproses emosi, dan tetap fungsional', points: 4, stats: { WIS: 3, VIT: 2 } },
+      C: { text: 'Tekanan membuatku melakukan hal yang kusesali', points: -1, stats: {} },
+      D: { text: 'Terguncang sesaat tapi bisa pulih dan tetap mengambil keputusan baik', points: 3, stats: { WIS: 2, VIT: 2 } },
+      E: { text: 'Aku hampir selalu kewalahan dan butuh waktu sangat lama untuk pulih', points: 0, stats: { VIT: 1 } },
+      F: { text: 'Emosi sering menguasaiku — meledak, menarik diri, atau overthinking', points: 1, stats: { WIS: 1 } },
     },
   },
   {
     id: 9,
-    question: 'Dalam menghadapi masalah besar, kamu pertama kali...',
+    question: 'Ketika melihat sesuatu yang bisa diperbaiki atau peluang yang bisa diambil, apa yang biasanya terjadi?',
     options: {
-      A: { text: 'Langsung action — coba satu per satu sampai ketemu solusi', stats: { STR: 3, LCK: 1 } },
-      B: { text: 'Analisis akar masalah dulu secara sistematis', stats: { INT: 3, WIS: 2 } },
-      C: { text: 'Cari solusi yang unconventional atau kreatif', stats: { CRE: 3, INT: 1 } },
-      D: { text: 'Minta perspektif dari orang lain yang dipercaya', stats: { CHA: 3, WIS: 2 } },
+      A: { text: 'Aku cenderung acuh atau bahkan skeptis terhadap ide-ide baru', points: -1, stats: {} },
+      B: { text: 'Langsung berpikir solusi dan sering mengambil inisiatif untuk bertindak', points: 4, stats: { CRE: 3, STR: 2 } },
+      C: { text: 'Jarang punya inisiatif — lebih nyaman mengikuti', points: 0, stats: {} },
+      D: { text: 'Punya ide tapi perlu kondisi yang tepat untuk eksekusi', points: 3, stats: { CRE: 2, INT: 1 } },
+      E: { text: 'Lebih sering menunggu orang lain yang bertindak', points: 1, stats: { CHA: 1 } },
+      F: { text: 'Kadang tergerak, kadang tidak — tergantung situasi', points: 2, stats: { CRE: 1, LCK: 1 } },
     },
   },
   {
     id: 10,
-    question: 'Target terbesar kamu dalam 1 tahun ke depan adalah...',
+    question: 'Seberapa jelas kamu tahu ke mana hidupmu ingin pergi — dan seberapa aktif kamu bergerak ke sana?',
     options: {
-      A: { text: 'Fisik lebih sehat — olahraga rutin, badan ideal', stats: { STR: 2, VIT: 3 } },
-      B: { text: 'Skill atau pengetahuan baru yang level up karier', stats: { INT: 3, WIS: 2 } },
-      C: { text: 'Proyek kreatif yang selama ini cuma di kepala', stats: { CRE: 3, LCK: 1 } },
-      D: { text: 'Relasi dan circle yang lebih berkualitas', stats: { CHA: 3, WIS: 1 } },
+      A: { text: 'Aku tidak peduli ke mana hidupku pergi, atau sudah menyerah', points: -1, stats: {} },
+      B: { text: 'Samar-samar. Ada gambaran umum tapi belum ada aksi nyata yang konsisten', points: 2, stats: { WIS: 1, LCK: 1 } },
+      C: { text: 'Sangat jelas. Aku punya visi, rencana, dan bergerak aktif setiap hari', points: 4, stats: { WIS: 3, LCK: 2 } },
+      D: { text: 'Aku sudah berhenti mencoba memikirkan masa depan', points: 0, stats: {} },
+      E: { text: 'Bingung. Aku tidak tahu apa yang benar-benar aku inginkan', points: 1, stats: { WIS: 1 } },
+      F: { text: 'Cukup jelas. Ada arah yang kutuju meski langkahnya belum konsisten', points: 3, stats: { WIS: 2, LCK: 1 } },
     },
   },
 ]
@@ -161,18 +182,36 @@ export function emptyStats(): Stats {
   return { STR: 0, INT: 0, VIT: 0, WIS: 0, CRE: 0, LCK: 0, CHA: 0 }
 }
 
-/** Sums the stat points granted by each chosen answer across all questions. */
-export function calculateStats(answers: Record<number, OptionKey>): Stats {
-  const totals = emptyStats()
-  for (const q of QUESTIONS) {
-    const choice = answers[q.id]
-    if (!choice) continue
-    const gained = q.options[choice].stats
-    for (const key of STAT_KEYS) {
-      totals[key] += gained[key] ?? 0
+/** Rank threshold based on total points (max 40, min -10). */
+export function calculateRankFromPoints(totalPoints: number): string {
+  if (totalPoints >= 35) return 'A'
+  if (totalPoints >= 28) return 'B'
+  if (totalPoints >= 20) return 'C'
+  if (totalPoints >= 12) return 'D'
+  if (totalPoints >= 5) return 'E'
+  return 'F'
+}
+
+/** Aggregates stats and total points from answers, then derives the rank. */
+export function calculateStats(answers: Record<number, OptionKey>): {
+  stats: Stats
+  totalPoints: number
+  rank: string
+} {
+  const stats = emptyStats()
+  let totalPoints = 0
+
+  for (const [qId, choice] of Object.entries(answers)) {
+    const q = QUESTIONS.find((item) => item.id === Number(qId))
+    if (!q) continue
+    const opt = q.options[choice]
+    totalPoints += opt.points
+    for (const [stat, val] of Object.entries(opt.stats)) {
+      stats[stat as StatKey] += val ?? 0
     }
   }
-  return totals
+
+  return { stats, totalPoints, rank: calculateRankFromPoints(totalPoints) }
 }
 
 /** Picks the role whose primary stat scored highest. Ties resolve to ROLES order. */

@@ -6,12 +6,22 @@ import type { Role, Stats } from './questions'
 
 type Props = {
   stats: Stats
+  rank: string
   onComplete: (role: Role, roleName: string) => void
 }
 
 const MAX_ROLE_NAME = 40
 
-export function StepResult({ stats, onComplete }: Props) {
+const RANK_COLORS: Record<string, string> = {
+  F: 'var(--rank-f)',
+  E: 'var(--rank-e)',
+  D: 'var(--rank-d)',
+  C: 'var(--rank-c)',
+  B: 'var(--rank-b)',
+  A: 'var(--rank-a)',
+}
+
+export function StepResult({ stats, rank, onComplete }: Props) {
   const suggested = useMemo(() => suggestRole(stats), [stats])
   const maxStat = useMemo(
     () => Math.max(1, ...STAT_KEYS.map((key) => stats[key])),
@@ -36,13 +46,15 @@ export function StepResult({ stats, onComplete }: Props) {
 
   const trimmedName = roleName.trim()
   const canBegin = trimmedName.length > 0
+  const rankColor = RANK_COLORS[rank] ?? 'var(--rank-f)'
 
   return (
     <main style={pageStyle}>
       <div style={shellStyle}>
         <header style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <p style={eyebrowStyle}>RANK F · AWAKENED</p>
-          <h1 style={titleStyle}>Awakening Complete</h1>
+          <p style={eyebrowStyle}>AWAKENED</p>
+          <div style={rankBadgeStyle(rankColor)}>{rank}</div>
+          <h1 style={titleStyle}>Rank {rank} Awakened</h1>
           <p style={subtitleStyle}>Kekuatanmu telah terbangun. Inilah dirimu.</p>
         </header>
 
@@ -152,11 +164,29 @@ const eyebrowStyle: CSSProperties = {
   letterSpacing: '0.35em',
   fontSize: '0.7rem',
   color: 'var(--accent)',
-  marginBottom: '0.75rem',
+  marginBottom: '1rem',
+}
+
+function rankBadgeStyle(color: string): CSSProperties {
+  return {
+    width: 104,
+    height: 104,
+    margin: '0 auto 1.25rem',
+    display: 'grid',
+    placeItems: 'center',
+    borderRadius: 24,
+    fontSize: '3.5rem',
+    fontWeight: 900,
+    lineHeight: 1,
+    color,
+    background: 'var(--surface)',
+    border: `2px solid ${color}`,
+    boxShadow: `0 0 50px ${color}`,
+  }
 }
 
 const titleStyle: CSSProperties = {
-  fontSize: 'clamp(2.2rem, 1rem + 5vw, 3.5rem)',
+  fontSize: 'clamp(2rem, 1rem + 4.5vw, 3.2rem)',
   fontWeight: 900,
   letterSpacing: '-0.03em',
   backgroundImage: 'linear-gradient(180deg, #ffffff 0%, #c9c2ff 70%, #7c3aed 150%)',

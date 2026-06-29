@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { OPTION_KEYS } from './questions'
 import type { OptionKey, Question } from './questions'
 
@@ -11,12 +11,27 @@ type Props = {
   onAnswer: (questionId: number, option: OptionKey) => void
 }
 
+const ADVANCE_DELAY_MS = 220
+
 export function StepQuestions({ question, index, total, onAnswer }: Props) {
   const [hovered, setHovered] = useState<OptionKey | null>(null)
+  const [selected, setSelected] = useState<OptionKey | null>(null)
+
+  // Reset transient UI state whenever a new question is shown.
+  useEffect(() => {
+    setHovered(null)
+    setSelected(null)
+  }, [question.id])
 
   const progress = Math.round(((index + 1) / total) * 100)
   const current = String(index + 1).padStart(2, '0')
   const totalLabel = String(total).padStart(2, '0')
+
+  function handlePick(key: OptionKey) {
+    if (selected) return
+    setSelected(key)
+    window.setTimeout(() => onAnswer(question.id, key), ADVANCE_DELAY_MS)
+  }
 
   return (
     <main style={pageStyle}>
@@ -38,20 +53,21 @@ export function StepQuestions({ question, index, total, onAnswer }: Props) {
         <div key={question.id} style={contentStyle}>
           <h1 style={questionStyle}>{question.question}</h1>
 
-          <div style={optionsGridStyle}>
+          <div style={optionsListStyle}>
             {OPTION_KEYS.map((key) => {
               const option = question.options[key]
               const isHover = hovered === key
+              const isSelected = selected === key
               return (
                 <button
                   key={key}
                   type="button"
-                  onClick={() => onAnswer(question.id, key)}
+                  onClick={() => handlePick(key)}
                   onMouseEnter={() => setHovered(key)}
                   onMouseLeave={() => setHovered(null)}
-                  style={optionCardStyle(isHover)}
+                  style={optionCardStyle(isHover, isSelected)}
                 >
-                  <span style={letterBadgeStyle(isHover)}>{key}</span>
+                  <span style={letterBadgeStyle(isSelected)}>{key}</span>
                   <span style={{ textAlign: 'left', lineHeight: 1.45 }}>{option.text}</span>
                 </button>
               )
@@ -68,14 +84,14 @@ const pageStyle: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  padding: '2rem 1.5rem',
+  padding: '2.5rem 1.5rem',
   background:
     'radial-gradient(ellipse 70% 50% at 50% -10%, rgba(124, 58, 237, 0.16), transparent 70%), var(--bg)',
 }
 
 const shellStyle: CSSProperties = {
   width: '100%',
-  maxWidth: 760,
+  maxWidth: 640,
 }
 
 const progressHeaderStyle: CSSProperties = {
@@ -102,57 +118,60 @@ const fillStyle: CSSProperties = {
 }
 
 const contentStyle: CSSProperties = {
-  marginTop: '3rem',
+  marginTop: '2.5rem',
   animation: 'fadeUp 350ms cubic-bezier(0.16, 1, 0.3, 1)',
 }
 
 const questionStyle: CSSProperties = {
-  fontSize: 'clamp(1.5rem, 1rem + 2.5vw, 2.4rem)',
+  fontSize: 'clamp(1.35rem, 1rem + 2vw, 2.1rem)',
   fontWeight: 800,
-  lineHeight: 1.2,
+  lineHeight: 1.25,
   letterSpacing: '-0.02em',
   textAlign: 'center',
-  marginBottom: '2.5rem',
+  marginBottom: '2rem',
 }
 
-const optionsGridStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-  gap: '1rem',
+const optionsListStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.75rem',
 }
 
-function optionCardStyle(isHover: boolean): CSSProperties {
+function optionCardStyle(isHover: boolean, isSelected: boolean): CSSProperties {
+  const active = isHover || isSelected
   return {
     display: 'flex',
     alignItems: 'center',
     gap: '1rem',
-    padding: '1.25rem',
-    borderRadius: 14,
+    width: '100%',
+    padding: '1.1rem 1.25rem',
+    borderRadius: 12,
     cursor: 'pointer',
     textAlign: 'left',
     color: 'var(--text)',
     fontSize: '1rem',
-    background: isHover ? 'var(--surface-2)' : 'var(--surface)',
-    border: `1px solid ${isHover ? 'var(--accent)' : 'var(--border)'}`,
-    boxShadow: isHover ? '0 10px 30px rgba(124, 58, 237, 0.25)' : 'none',
-    transform: isHover ? 'translateY(-3px)' : 'translateY(0)',
-    transition: 'transform 200ms ease, border-color 200ms ease, background 200ms ease, box-shadow 200ms ease',
+    background: active ? 'var(--surface-2)' : 'var(--surface)',
+    border: '1px solid var(--border)',
+    borderLeft: `3px solid ${active ? 'var(--accent)' : 'transparent'}`,
+    boxShadow: isSelected ? '0 10px 30px rgba(124, 58, 237, 0.25)' : 'none',
+    transform: isHover && !isSelected ? 'translateX(4px)' : 'translateX(0)',
+    transition: 'transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease',
   }
 }
 
-function letterBadgeStyle(isHover: boolean): CSSProperties {
+function letterBadgeStyle(isSelected: boolean): CSSProperties {
   return {
     flexShrink: 0,
-    width: 38,
-    height: 38,
+    width: 34,
+    height: 34,
     display: 'grid',
     placeItems: 'center',
-    borderRadius: 10,
+    borderRadius: 8,
     fontWeight: 800,
-    fontSize: '1rem',
-    color: isHover ? '#fff' : 'var(--accent)',
-    background: isHover ? 'linear-gradient(180deg, #8b5cf6, #7c3aed)' : 'var(--surface-2)',
-    border: `1px solid ${isHover ? 'transparent' : 'var(--border)'}`,
-    transition: 'all 200ms ease',
+    fontSize: '0.95rem',
+    color: isSelected ? '#fff' : 'var(--text-muted)',
+    background: isSelected ? 'linear-gradient(180deg, #8b5cf6, #7c3aed)' : 'var(--surface-2)',
+    border: `1px solid ${isSelected ? 'transparent' : 'var(--border)'}`,
+    transition: 'all 180ms ease',
   }
 }
