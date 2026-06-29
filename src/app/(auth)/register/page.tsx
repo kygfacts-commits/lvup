@@ -25,20 +25,35 @@ export default function RegisterPage() {
 
     setLoading(true)
     const supabase = createClient()
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { display_name: displayName },
       },
     })
-    setLoading(false)
 
     if (signUpError) {
+      setLoading(false)
       setError(signUpError.message)
       return
     }
 
+    // Fallback for a flaky handle_new_user trigger: if signup succeeded but
+    // the trigger didn't populate the profile (or its display_name), backfill
+    // it manually. The upsert error is intentionally ignored because the row
+    // may already exist from the trigger.
+    if (data.user) {
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      await supabase
+        .from('profiles')
+        .upsert(
+          { id: data.user.id, display_name: displayName },
+          { onConflict: 'id' },
+        )
+    }
+
+    setLoading(false)
     router.push('/onboarding')
   }
 
@@ -81,7 +96,7 @@ export default function RegisterPage() {
           required
         />
 
-        {error && <p style={errorStyle}>{error}</p>}
+        {error && <p className="text-red-400 text-sm">{typeof error === 'string' ? error : (error as any).message || JSON.stringify(error)}</p>}
 
         <button type="submit" disabled={loading} style={buttonStyle(loading)}>
           {loading ? 'Creating account…' : 'Start Your Journey'}
@@ -193,11 +208,6 @@ const buttonStyle = (loading: boolean): React.CSSProperties => ({
   background: 'linear-gradient(180deg, #8b5cf6, #7c3aed)',
   boxShadow: '0 8px 24px rgba(124, 58, 237, 0.4)',
 })
-
-const errorStyle: React.CSSProperties = {
-  color: 'var(--rank-a)',
-  fontSize: '0.85rem',
-}
 
 const footerStyle: React.CSSProperties = {
   marginTop: '1.5rem',
