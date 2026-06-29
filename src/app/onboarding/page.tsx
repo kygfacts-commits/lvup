@@ -54,22 +54,30 @@ export default function OnboardingPage() {
 
       const { stats, rank } = calculateStats(answers)
 
-      // 1. Resolve the role_id for the chosen class.
-      const { data: roleRow, error: roleError } = await supabase
+      // 1. Resolve the role_id for the chosen class. Fetch all roles and match
+      // client-side — a filtered `.eq('name', ...).single()` was returning null
+      // (RLS / silent miss) even when the role existed.
+      // SQL needed: create policy "Anyone can read roles" on roles for select using (true);
+      const { data: rolesData, error: rolesError } = await supabase
         .from('roles')
-        .select('id')
-        .eq('name', role.name)
-        .single()
-      if (roleError || !roleRow) {
+        .select('id, name')
+      if (rolesError || !rolesData) throw new Error('Failed to fetch roles')
+
+      const matchedRole = rolesData.find(
+        (r) => r.name.toLowerCase() === role.name.toLowerCase(),
+      )
+      if (!matchedRole) {
         throw new Error(`Role "${role.name}" was not found. Please try again.`)
       }
+
+      const roleId = matchedRole.id
 
       // 2. Persist the profile snapshot with the calculated rank.
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
           stats,
-          role_id: roleRow.id,
+          role_id: roleId,
           role_name: roleName,
           rank,
           onboarding_done: true,
