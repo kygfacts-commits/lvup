@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { STAT_COLORS, STAT_KEYS } from '@/app/onboarding/questions'
 import {
   formatDeadline,
@@ -338,6 +339,7 @@ export function DailyOverview({
   onMood: (value: number) => void
   savingMood: boolean
 }) {
+  const router = useRouter()
   return (
     <section>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '1rem' }}>
@@ -349,7 +351,7 @@ export function DailyOverview({
         <Card>
           <h3 style={cardHeadingStyle}>Daily Tasks</h3>
           <p style={cardMutedStyle}>{taskCount} task hari ini</p>
-          <button type="button" style={accentButtonStyle}>
+          <button type="button" onClick={() => router.push('/tasks')} style={accentButtonStyle}>
             Tambah Task
           </button>
         </Card>
