@@ -48,71 +48,96 @@ export default function OnboardingPage() {
         data: { user },
         error: userError,
       } = await supabase.auth.getUser()
-      if (userError || !user) {
-        throw new Error('Your session expired. Please log in again.')
+      if (userError || !user) throw new Error('Not authenticated')
+
+      const statResult = calculateStats(answers)
+
+      // Fetch question UUIDs: onboarding_answers.question_id is a UUID FK to
+      // onboarding_questions, but our QUESTIONS array uses numeric ids (1-10).
+      // SQL needed: create policy "Anyone can read questions" on onboarding_questions for select using (true);
+      const { data: dbQuestions, error: qError } = await supabase
+        .from('onboarding_questions')
+        .select('id, order_num')
+        .order('order_num')
+      if (qError || !dbQuestions) {
+        throw new Error(`Failed to fetch questions: ${qError?.message}`)
       }
 
-      const { stats, rank } = calculateStats(answers)
+      // Map order_num (1-10) → UUID.
+      const questionIdMap: Record<number, string> = {}
+      dbQuestions.forEach((q) => {
+        questionIdMap[q.order_num] = q.id
+      })
 
-      // 1. Resolve the role_id for the chosen class. Fetch all roles and match
-      // client-side — a filtered `.eq('name', ...).single()` was returning null
-      // (RLS / silent miss) even when the role existed.
+      // Resolve the role_id by fetching all roles and matching client-side — a
+      // filtered `.eq('name', ...).single()` was returning null (RLS / silent miss).
       // SQL needed: create policy "Anyone can read roles" on roles for select using (true);
       const { data: rolesData, error: rolesError } = await supabase
         .from('roles')
         .select('id, name')
-      if (rolesError || !rolesData) throw new Error('Failed to fetch roles')
-
-      const matchedRole = rolesData.find(
-        (r) => r.name.toLowerCase() === role.name.toLowerCase(),
-      )
-      if (!matchedRole) {
-        throw new Error(`Role "${role.name}" was not found. Please try again.`)
+      if (rolesError || !rolesData?.length) {
+        throw new Error(`Failed to fetch roles: ${rolesError?.message}`)
       }
 
-      const roleId = matchedRole.id
+      const matchedRole = rolesData.find(
+        (r) => r.name.toLowerCase() === role.name.toLowerCase().trim(),
+      )
+      if (!matchedRole) {
+        throw new Error(`Role "${role.name}" not found in DB`)
+      }
 
-      // 2. Persist the profile snapshot with the calculated rank.
+      // Persist the profile snapshot with the calculated rank.
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
-          stats,
-          role_id: roleId,
-          role_name: roleName,
-          rank,
+          stats: statResult.stats,
+          role_id: matchedRole.id,
+          role_name: roleName.trim() || role.name,
+          rank: statResult.rank,
           onboarding_done: true,
         })
         .eq('id', user.id)
-      if (profileError) throw profileError
+      if (profileError) {
+        throw new Error(`Profile update failed: ${profileError.message}`)
+      }
 
-      // 3. Seed the user's default tracking categories.
-      const { error: categoriesError } = await supabase.rpc('create_default_categories', {
+      // Seed the user's default tracking categories.
+      const { error: catError } = await supabase.rpc('create_default_categories', {
         p_user_id: user.id,
       })
-      if (categoriesError) throw categoriesError
+      if (catError) {
+        throw new Error(`Categories creation failed: ${catError.message}`)
+      }
 
-      // 4. Store each onboarding answer (10 rows).
-      const answerRows = QUESTIONS.map((q) => ({
+      // Store each onboarding answer, keyed by the DB question UUID.
+      const answersToInsert = Object.entries(answers).map(([questionId, choice]) => ({
         user_id: user.id,
-        question_id: q.id,
-        answer: answers[q.id],
+        question_id: questionIdMap[Number(questionId)],
+        answer: choice,
+        stat_gained:
+          QUESTIONS.find((q) => q.id === Number(questionId))?.options[choice as OptionKey]
+            ?.stats ?? {},
       }))
       const { error: answersError } = await supabase
         .from('onboarding_answers')
-        .insert(answerRows)
-      if (answersError) throw answersError
+        .insert(answersToInsert)
+      if (answersError) {
+        throw new Error(`Answers insert failed: ${answersError.message}`)
+      }
 
-      // 5. Award the onboarding XP bonus.
+      // Award the onboarding XP bonus.
       const { error: xpError } = await supabase.rpc('award_xp', {
         p_user_id: user.id,
-        p_source: 'onboarding',
+        p_source_type: 'onboarding',
         p_source_id: null,
-        p_amount: 50,
-        p_skill_id: null,
-        p_stat_gain: 0,
-        p_reason: 'Onboarding complete',
+        p_xp: 50,
+        p_stat: null,
+        p_stat_amount: 0,
+        p_description: 'Onboarding complete',
       })
-      if (xpError) throw xpError
+      if (xpError) {
+        throw new Error(`XP award failed: ${xpError.message}`)
+      }
 
       router.replace('/dashboard')
     } catch (error) {
